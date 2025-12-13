@@ -1,0 +1,43 @@
+# Copy this file to .env.local and fill in your actual values
+
+# Database (Supabase PostgreSQL)
+DATABASE_URL="postgresql://user:password@host:5432/dbname?pgbouncer=true"
+DIRECT_URL="postgresql://user:password@host:5432/dbname"
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+CLERK_SECRET_KEY=sk_test_xxxxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
+
+# QuickBooks OAuth
+QB_CLIENT_ID=your_intuit_client_id
+QB_CLIENT_SECRET=your_intuit_client_secret
+QB_REDIRECT_URI=http://localhost:3000/api/quickbooks/callback
+QB_ENVIRONMENT=sandbox
+
+# OpenAI
+OPENAI_API_KEY=sk-xxxxx
+
+# Pinecone Vector Database
+PINECONE_API_KEY=xxxxx
+PINECONE_ENVIRONMENT=us-east-1-aws
+PINECONE_INDEX_NAME=qb-categorization
+
+# Upstash Redis (for BullMQ)
+UPSTASH_REDIS_URL=xxxxx
+UPSTASH_REDIS_TOKEN=xxxxx
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_xxxxx
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+STRIPE_BASE_PRICE_ID=price_xxxxx
+STRIPE_PER_CLIENT_PRICE_ID=price_xxxxx
+
+# App Config
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
+

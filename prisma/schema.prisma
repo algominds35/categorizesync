@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Stripe
+  stripeCustomerId       String?  @unique
+  stripeSubscriptionId   String?  @unique
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+
+  // Relations
+  clients       Client[]
+  usageRecords  UsageRecord[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // QuickBooks OAuth
+  qbRealmId       String  @unique // QuickBooks Company ID
+  qbAccessToken   String  @db.Text
+  qbRefreshToken  String  @db.Text
+  qbTokenExpiry   DateTime
+  qbEnvironment   String  @default("production") // "sandbox" or "production"
+
+  // Settings
+  isActive                Boolean  @default(true)
+  lastSyncAt              DateTime?
+  autoSyncEnabled         Boolean  @default(false)
+  syncFrequencyHours      Int      @default(24)
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  learningExamples  LearningExample[]
+
+  @@index([userId])
+  @@index([qbRealmId])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  clientId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // QuickBooks Data
+  qbId            String  @unique // QuickBooks Transaction ID
+  qbType          String // "Purchase", "JournalEntry", "Expense", etc.
+  date            DateTime
+  amount          Float
+  description     String? @db.Text
+  vendor          String?
+  customer        String?
+  memo            String? @db.Text
+
+  // Original QuickBooks categorization (if any)
+  originalAccountId   String?
+  originalAccountName String?
+  originalClassId     String?
+  originalClassName   String?
+
+  // AI Categorization
+  aiAccountId         String?
+  aiAccountName       String?
+  aiClassId           String?
+  aiClassName         String?
+  aiConfidenceScore   Float?
+  aiReasoningNotes    String? @db.Text
+
+  // Review Status
+  status              TransactionStatus @default(PENDING)
+  reviewedAt          DateTime?
+  
+  // Final Categorization (after review/approval)
+  finalAccountId      String?
+  finalAccountName    String?
+  finalClassId        String?
+  finalClassName      String?
+
+  // Sync
+  syncedToQb          Boolean  @default(false)
+  syncedAt            DateTime?
+  syncError           String?  @db.Text
+
+  // Relations
+  client            Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  learningExample   LearningExample?
+
+  @@index([clientId])
+  @@index([status])
+  @@index([qbId])
+  @@index([syncedToQb])
+}
+
+enum TransactionStatus {
+  PENDING       // AI categorized, waiting for review
+  APPROVED      // Approved by user, ready to sync
+  EDITED        // User edited AI suggestion
+  SYNCED        // Successfully synced to QuickBooks
+  ERROR         // Error during sync
+}
+
+model LearningExample {
+  id        String   @id @default(cuid())
+  clientId  String
+  transactionId String @unique
+  createdAt DateTime @default(now())
+
+  // Input Features (what we learn from)
+  description     String  @db.Text
+  vendor          String?
+  amount          Float
+  originalContext String? @db.Text // Additional context for AI
+
+  // User Correction (ground truth)
+  correctAccountId    String
+  correctAccountName  String
+  correctClassId      String?
+  correctClassName    String?
+
+  // AI's Original Prediction
+  aiAccountId         String?
+  aiAccountName       String?
+  wasCorrect          Boolean @default(false)
+
+  // Embedding for vector search
+  embedding           Float[] // Stored as array for Pinecone sync
+  embeddingVersion    String  @default("v1")
+
+  // Pinecone sync
+  pineconeId          String? @unique
+  syncedToPinecone    Boolean @default(false)
+
+  // Relations
+  client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([syncedToPinecone])
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Billing period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Usage metrics
+  transactionsProcessed Int
+  clientsActive         Int
+
+  // Stripe
+  stripeInvoiceId    String? @unique
+  stripeInvoiceStatus String?
+  amount             Float
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([periodStart, periodEnd])
+}
+
+// QuickBooks Cache (for accounts, classes, etc.)
+model QBAccount {
+  id        String   @id @default(cuid())
+  clientId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  qbId            String
+  name            String
+  fullyQualifiedName String?
+  accountType     String
+  accountSubType  String?
+  active          Boolean @default(true)
+  classification  String? // "Asset", "Liability", "Equity", "Revenue", "Expense"
+
+  @@unique([clientId, qbId])
+  @@index([clientId])
+}
+
+model QBClass {
+  id        String   @id @default(cuid())
+  clientId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  qbId            String
+  name            String
+  fullyQualifiedName String?
+  active          Boolean @default(true)
+
+  @@unique([clientId, qbId])
+  @@index([clientId])
+}
+
