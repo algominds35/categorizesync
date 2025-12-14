@@ -21,28 +21,48 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange authorization code for tokens
+    // Exchange authorization code for tokens (OAuth 2.0)
+    const tokenEndpoint = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
+    
+    const authHeader = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString('base64')
+    
+    const tokenResponse = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${authHeader}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: QB_REDIRECT_URI,
+      }).toString(),
+    })
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text()
+      console.error('Token exchange failed:', errorText)
+      throw new Error(`Token exchange failed: ${errorText}`)
+    }
+
+    const tokenData = await tokenResponse.json()
+
+    // Get company info using the new access token
     const qbo = new QuickBooks(
       QB_CLIENT_ID,
       QB_CLIENT_SECRET,
-      '',
+      tokenData.access_token,
       false,
       realmId,
       QB_ENVIRONMENT === 'sandbox',
-      true,
-      null,
-      '2.0',
+      false, // debug
+      65, // minor version
+      '2.0', // OAuth version
+      tokenData.refresh_token,
       QB_REDIRECT_URI
     )
 
-    const tokenData = await new Promise<any>((resolve, reject) => {
-      qbo.exchangeAuthCode(code, (err: any, response: any) => {
-        if (err) reject(err)
-        else resolve(response)
-      })
-    })
-
-    // Get company info
     const companyInfo = await new Promise<any>((resolve, reject) => {
       qbo.getCompanyInfo(realmId, (err: any, response: any) => {
         if (err) reject(err)
