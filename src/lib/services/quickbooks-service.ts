@@ -4,6 +4,9 @@ import { QBTransaction, QBAccount, QBClass } from '@/types/quickbooks'
 
 export class QuickBooksService {
   private qb: any
+  private accessToken: string
+  private realmId: string
+  private baseUrl: string
 
   constructor(
     accessToken: string,
@@ -11,6 +14,13 @@ export class QuickBooksService {
     realmId: string,
     environment: string = 'production'
   ) {
+    // Store for direct API calls
+    this.accessToken = accessToken
+    this.realmId = realmId
+    this.baseUrl = environment === 'sandbox' 
+      ? 'https://sandbox-quickbooks.api.intuit.com'
+      : 'https://quickbooks.api.intuit.com'
+
     // Initialize QuickBooks client
     const clientId = process.env.QB_CLIENT_ID!
     const clientSecret = process.env.QB_CLIENT_SECRET!
@@ -32,64 +42,60 @@ export class QuickBooksService {
   }
 
   /**
+   * Make direct API request to QuickBooks
+   */
+  private async makeApiRequest(query: string): Promise<any> {
+    const url = `${this.baseUrl}/v3/company/${this.realmId}/query?query=${encodeURIComponent(query)}&minorversion=65`
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('QB API Error:', error)
+      throw new Error(`QuickBooks API error: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  /**
    * Fetch uncategorized transactions (Purchases, Expenses, Journal Entries)
    */
   async fetchUncategorizedTransactions(
     startDate?: Date,
     endDate?: Date
   ): Promise<QBTransaction[]> {
-    const transactions: QBTransaction[]= []
+    const transactions: QBTransaction[] = []
 
     try {
       // Fetch Purchases
-      const purchases = await this.findPurchases()
-      transactions.push(...purchases)
+      const purchaseQuery = 'SELECT * FROM Purchase MAXRESULTS 100'
+      const purchaseData = await this.makeApiRequest(purchaseQuery)
+      const purchases = purchaseData?.QueryResponse?.Purchase || []
+      transactions.push(...(Array.isArray(purchases) ? purchases : [purchases].filter(Boolean)))
 
-      // Fetch Expenses
-      const expenses = await this.findExpenses()
-      transactions.push(...expenses)
+      console.log(`Fetched ${purchases.length} purchases`)
 
-      console.log(`Fetched ${purchases.length} purchases and ${expenses.length} expenses`)
+      // Fetch Expenses  
+      const expenseQuery = 'SELECT * FROM Expense MAXRESULTS 100'
+      const expenseData = await this.makeApiRequest(expenseQuery)
+      const expenses = expenseData?.QueryResponse?.Expense || []
+      transactions.push(...(Array.isArray(expenses) ? expenses : [expenses].filter(Boolean)))
+
+      console.log(`Fetched ${expenses.length} expenses`)
 
       return transactions
     } catch (error) {
       console.error('Error fetching QB transactions:', error)
       throw error
     }
-  }
-
-  /**
-   * Find purchases
-   */
-  private async findPurchases(): Promise<QBTransaction[]> {
-    return new Promise((resolve, reject) => {
-      this.qb.findPurchases({}, (err: any, data: any) => {
-        if (err) {
-          console.error('Error fetching purchases:', err)
-          return resolve([]) // Return empty array on error
-        }
-
-        const purchases = data?.QueryResponse?.Purchase || []
-        resolve(Array.isArray(purchases) ? purchases : purchases ? [purchases] : [])
-      })
-    })
-  }
-
-  /**
-   * Find expenses
-   */
-  private async findExpenses(): Promise<QBTransaction[]> {
-    return new Promise((resolve, reject) => {
-      this.qb.findExpenses({}, (err: any, data: any) => {
-        if (err) {
-          console.error('Error fetching expenses:', err)
-          return resolve([]) // Return empty array on error
-        }
-
-        const expenses = data?.QueryResponse?.Expense || []
-        resolve(Array.isArray(expenses) ? expenses : expenses ? [expenses] : [])
-      })
-    })
   }
 
   /**
