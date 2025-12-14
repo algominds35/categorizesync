@@ -47,6 +47,13 @@ export class QuickBooksService {
   private async makeApiRequest(query: string): Promise<any> {
     const url = `${this.baseUrl}/v3/company/${this.realmId}/query?query=${encodeURIComponent(query)}&minorversion=65`
     
+    console.log('=== QuickBooks API Request ===')
+    console.log('URL:', url)
+    console.log('RealmId:', this.realmId)
+    console.log('Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...')
+    console.log('Base URL:', this.baseUrl)
+    console.log('Query:', query)
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -56,9 +63,12 @@ export class QuickBooksService {
       },
     })
 
+    console.log('Response status:', response.status)
+
     if (!response.ok) {
       const error = await response.text()
       console.error('QB API Error:', error)
+      console.error('Full response status:', response.status, response.statusText)
       throw new Error(`QuickBooks API error: ${response.status}`)
     }
 
@@ -188,11 +198,19 @@ export async function createQBServiceForClient(clientId: string) {
     throw new Error('Client not found')
   }
 
+  console.log('=== Creating QB Service ===')
+  console.log('Client ID:', clientId)
+  console.log('RealmId:', client.qbRealmId)
+  console.log('Environment:', client.qbEnvironment)
+  console.log('Token expiry:', client.qbTokenExpiry)
+  console.log('Token expired?:', new Date() >= new Date(client.qbTokenExpiry))
+
   // Check if token is expired
   const now = new Date()
   const tokenExpiry = new Date(client.qbTokenExpiry)
 
   if (now >= tokenExpiry) {
+    console.log('Token expired, refreshing...')
     // Token expired, refresh it
     const qbService = new QuickBooksService(
       client.qbAccessToken,
@@ -213,6 +231,8 @@ export async function createQBServiceForClient(clientId: string) {
       },
     })
 
+    console.log('Token refreshed successfully')
+
     return new QuickBooksService(
       newTokens.accessToken,
       newTokens.refreshToken,
@@ -220,6 +240,8 @@ export async function createQBServiceForClient(clientId: string) {
       client.qbEnvironment
     )
   }
+
+  console.log('Using existing token')
 
   return new QuickBooksService(
     client.qbAccessToken,

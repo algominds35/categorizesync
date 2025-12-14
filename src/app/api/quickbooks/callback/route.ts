@@ -99,13 +99,14 @@ export async function GET(request: NextRequest) {
     })
 
     if (existingClient) {
-      // Update tokens
+      // Update tokens AND environment
       await db.client.update({
         where: { id: existingClient.id },
         data: {
           qbAccessToken: tokenData.access_token,
           qbRefreshToken: tokenData.refresh_token,
           qbTokenExpiry: new Date(Date.now() + tokenData.expires_in * 1000),
+          qbEnvironment: QB_ENVIRONMENT, // ✅ UPDATE ENVIRONMENT TOO!
           isActive: true,
         }
       })
