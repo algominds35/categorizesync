@@ -9,10 +9,19 @@ import { categorizeTransaction } from '@/lib/services/ai-categorization-service'
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId: clerkUserId } = await auth()
 
-    if (!userId) {
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Find user in database
+    const user = await db.user.findUnique({
+      where: { clerkId: clerkUserId },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const body = await request.json()
@@ -29,7 +38,7 @@ export async function POST(request: NextRequest) {
     const client = await db.client.findFirst({
       where: {
         id: clientId,
-        userId: userId,
+        userId: user.id,
       },
     })
 
@@ -117,10 +126,19 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId: clerkUserId } = await auth()
 
-    if (!userId) {
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Find user in database
+    const user = await db.user.findUnique({
+      where: { clerkId: clerkUserId },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -137,7 +155,7 @@ export async function GET(request: NextRequest) {
     const client = await db.client.findFirst({
       where: {
         id: clientId,
-        userId: userId,
+        userId: user.id,
       },
     })
 
