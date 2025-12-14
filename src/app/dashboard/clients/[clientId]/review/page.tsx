@@ -117,9 +117,9 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                               {txn.aiClassName && (
                                 <div className="text-xs text-gray-500">{txn.aiClassName}</div>
                               )}
-                              {txn.aiConfidence && (
+                              {txn.aiConfidenceScore && (
                                 <div className="text-xs text-gray-500">
-                                  {Math.round(txn.aiConfidence * 100)}% confidence
+                                  {Math.round(txn.aiConfidenceScore * 100)}% confidence
                                 </div>
                               )}
                             </div>
