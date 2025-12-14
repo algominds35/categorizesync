@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
  */
 async function storeTransaction(
   clientId: string,
-  qbTxn: QBTransaction
+  qbTxn: any
 ): Promise<any> {
   try {
     // Check if transaction already exists
@@ -143,18 +143,83 @@ async function storeTransaction(
       return null
     }
 
-    // Extract transaction details
-    const firstLine = qbTxn.Line?.[0] || {}
-    const accountDetail = firstLine.AccountBasedExpenseLineDetail
-
-    const vendor = qbTxn.EntityRef?.type === 'Vendor' ? qbTxn.EntityRef.name : null
-    const customer = qbTxn.EntityRef?.type === 'Customer' ? qbTxn.EntityRef.name : null
-
-    // Determine transaction type
+    // Determine transaction type and extract details accordingly
     let qbType = 'Unknown'
-    if (qbTxn.hasOwnProperty('Purchase')) qbType = 'Purchase'
-    else if (qbTxn.hasOwnProperty('Expense')) qbType = 'Expense'
-    else if (qbTxn.hasOwnProperty('JournalEntry')) qbType = 'JournalEntry'
+    let vendor = null
+    let customer = null
+    let description = ''
+    let memo = null
+    let accountId = null
+    let accountName = null
+    let classId = null
+    let className = null
+    
+    // Check for Purchase (includes checks, credit card charges, cash purchases)
+    if (qbTxn.PaymentType !== undefined) {
+      qbType = 'Purchase'
+      vendor = qbTxn.EntityRef?.name || null
+      
+      // Get description from first line or PrivateNote
+      const firstLine = qbTxn.Line?.[0]
+      if (firstLine) {
+        description = firstLine.Description || qbTxn.PrivateNote || qbTxn.DocNumber || ''
+        
+        // Get account from line detail
+        const accountDetail = firstLine.AccountBasedExpenseLineDetail
+        if (accountDetail) {
+          accountId = accountDetail.AccountRef?.value || null
+          accountName = accountDetail.AccountRef?.name || null
+          classId = accountDetail.ClassRef?.value || null
+          className = accountDetail.ClassRef?.name || null
+        }
+      }
+      memo = qbTxn.PrivateNote || null
+    }
+    // Check for Bill
+    else if (qbTxn.VendorRef !== undefined) {
+      qbType = 'Bill'
+      vendor = qbTxn.VendorRef?.name || null
+      
+      // Get description from first line
+      const firstLine = qbTxn.Line?.[0]
+      if (firstLine) {
+        description = firstLine.Description || qbTxn.PrivateNote || qbTxn.DocNumber || ''
+        
+        // Get account from line detail
+        const accountDetail = firstLine.AccountBasedExpenseLineDetail
+        if (accountDetail) {
+          accountId = accountDetail.AccountRef?.value || null
+          accountName = accountDetail.AccountRef?.name || null
+          classId = accountDetail.ClassRef?.value || null
+          className = accountDetail.ClassRef?.name || null
+        }
+      }
+      memo = qbTxn.PrivateNote || null
+    }
+    // Check for JournalEntry
+    else if (qbTxn.Line && qbTxn.Line[0]?.JournalEntryLineDetail) {
+      qbType = 'JournalEntry'
+      description = qbTxn.PrivateNote || qbTxn.DocNumber || 'Journal Entry'
+      
+      // Get first debit line
+      const debitLine = qbTxn.Line.find((line: any) => line.JournalEntryLineDetail?.PostingType === 'Debit')
+      if (debitLine) {
+        const journalDetail = debitLine.JournalEntryLineDetail
+        accountId = journalDetail.AccountRef?.value || null
+        accountName = journalDetail.AccountRef?.name || null
+        classId = journalDetail.ClassRef?.value || null
+        className = journalDetail.ClassRef?.name || null
+      }
+      memo = qbTxn.PrivateNote || null
+    }
+
+    console.log(`Storing ${qbType} transaction:`, {
+      id: qbTxn.Id,
+      vendor,
+      customer,
+      description: description.substring(0, 50),
+      amount: qbTxn.TotalAmt
+    })
 
     // Create transaction
     const transaction = await db.transaction.create({
@@ -163,15 +228,15 @@ async function storeTransaction(
         qbId: qbTxn.Id,
         qbType,
         date: new Date(qbTxn.TxnDate),
-        amount: Math.abs(qbTxn.TotalAmt),
-        description: qbTxn.PrivateNote || qbTxn.DocNumber || '',
+        amount: Math.abs(qbTxn.TotalAmt || 0),
+        description,
         vendor,
         customer,
-        memo: qbTxn.PrivateNote || null,
-        originalAccountId: accountDetail?.AccountRef?.value || null,
-        originalAccountName: accountDetail?.AccountRef?.name || null,
-        originalClassId: accountDetail?.ClassRef?.value || null,
-        originalClassName: accountDetail?.ClassRef?.name || null,
+        memo,
+        originalAccountId: accountId,
+        originalAccountName: accountName,
+        originalClassId: classId,
+        originalClassName: className,
         status: 'PENDING',
       },
     })
