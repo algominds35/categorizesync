@@ -76,7 +76,7 @@ export class QuickBooksService {
   }
 
   /**
-   * Fetch uncategorized transactions (Purchases, Expenses, Journal Entries)
+   * Fetch uncategorized transactions (Purchases, Bills, Journal Entries)
    */
   async fetchUncategorizedTransactions(
     startDate?: Date,
@@ -89,25 +89,28 @@ export class QuickBooksService {
       const purchaseQuery = 'SELECT * FROM Purchase MAXRESULTS 100'
       const purchaseData = await this.makeApiRequest(purchaseQuery)
       const purchases = purchaseData?.QueryResponse?.Purchase || []
-      transactions.push(...(Array.isArray(purchases) ? purchases : [purchases].filter(Boolean)))
+      const purchaseArray = Array.isArray(purchases) ? purchases : (purchases ? [purchases] : [])
+      transactions.push(...purchaseArray)
 
-      console.log(`Fetched ${purchases.length} purchases`)
+      console.log(`Fetched ${purchaseArray.length} purchases`)
 
       // Fetch Bills  
       const billQuery = 'SELECT * FROM Bill MAXRESULTS 100'
       const billData = await this.makeApiRequest(billQuery)
       const bills = billData?.QueryResponse?.Bill || []
-      transactions.push(...(Array.isArray(bills) ? bills : [bills].filter(Boolean)))
+      const billArray = Array.isArray(bills) ? bills : (bills ? [bills] : [])
+      transactions.push(...billArray)
 
-      console.log(`Fetched ${bills.length} bills`)
+      console.log(`Fetched ${billArray.length} bills`)
 
       // Fetch Journal Entries
       const journalQuery = 'SELECT * FROM JournalEntry MAXRESULTS 100'
       const journalData = await this.makeApiRequest(journalQuery)
       const journals = journalData?.QueryResponse?.JournalEntry || []
-      transactions.push(...(Array.isArray(journals) ? journals : [journals].filter(Boolean)))
+      const journalArray = Array.isArray(journals) ? journals : (journals ? [journals] : [])
+      transactions.push(...journalArray)
 
-      console.log(`Fetched ${journals.length} journal entries`)
+      console.log(`Fetched ${journalArray.length} journal entries`)
 
       return transactions
     } catch (error) {
