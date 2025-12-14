@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Plus, Users } from 'lucide-react'
+import { RefreshCw, Plus, Users, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface Client {
@@ -19,6 +19,7 @@ interface ClientListProps {
 
 export function ClientList({ clients }: ClientListProps) {
   const [syncing, setSyncing] = useState<string | null>(null)
+  const [categorizing, setCategorizing] = useState<string | null>(null)
   const { toast } = useToast()
 
   const handleSync = async (clientId: string) => {
@@ -54,6 +55,42 @@ export function ClientList({ clients }: ClientListProps) {
       })
     } finally {
       setSyncing(null)
+    }
+  }
+
+  const handleCategorize = async (clientId: string) => {
+    setCategorizing(clientId)
+    try {
+      const response = await fetch('/api/transactions/categorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: 'AI Categorization Complete!',
+          description: `Categorized ${data.categorized} transactions with AI`,
+        })
+        // Refresh the page to show categorized transactions
+        window.location.reload()
+      } else {
+        toast({
+          title: 'Categorization Failed',
+          description: data.error || 'Failed to categorize transactions',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      })
+    } finally {
+      setCategorizing(null)
     }
   }
 
@@ -100,15 +137,29 @@ export function ClientList({ clients }: ClientListProps) {
               variant="outline"
               size="sm"
               onClick={() => handleSync(client.id)}
-              disabled={syncing === client.id}
+              disabled={syncing === client.id || categorizing === client.id}
             >
               <RefreshCw
                 className={`mr-2 h-4 w-4 ${syncing === client.id ? 'animate-spin' : ''}`}
               />
               {syncing === client.id ? 'Syncing...' : 'Sync'}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCategorize(client.id)}
+              disabled={syncing === client.id || categorizing === client.id || client.transactions.length === 0}
+              title={client.transactions.length === 0 ? 'No transactions to categorize' : 'Categorize transactions with AI'}
+            >
+              <Sparkles
+                className={`mr-2 h-4 w-4 ${categorizing === client.id ? 'animate-pulse' : ''}`}
+              />
+              {categorizing === client.id ? 'AI Thinking...' : 'AI Categorize'}
+            </Button>
             <Link href={`/dashboard/clients/${client.id}/review`}>
-              <Button size="sm">Review</Button>
+              <Button size="sm" disabled={client.transactions.length === 0}>
+                Review
+              </Button>
             </Link>
           </div>
         </div>

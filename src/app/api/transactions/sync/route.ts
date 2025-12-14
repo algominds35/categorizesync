@@ -5,6 +5,7 @@ import {
   createQBServiceForClient,
   QBTransaction,
 } from '@/lib/services/quickbooks-service'
+import { categorizeTransaction } from '@/lib/services/ai-categorization-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,12 +77,34 @@ export async function POST(request: NextRequest) {
       data: { lastSyncAt: new Date() },
     })
 
+    // Auto-categorize new transactions using AI
+    let categorized = 0
+    let categorizationErrors = 0
+
+    if (newTransactions.length > 0) {
+      console.log(`Starting AI categorization for ${newTransactions.length} transactions...`)
+      
+      for (const transaction of newTransactions) {
+        try {
+          await categorizeTransaction(transaction.id)
+          categorized++
+        } catch (error: any) {
+          console.error(`Error categorizing transaction ${transaction.id}:`, error)
+          categorizationErrors++
+        }
+      }
+
+      console.log(`AI categorization complete: ${categorized} categorized, ${categorizationErrors} errors`)
+    }
+
     return NextResponse.json({
       success: true,
       transactionsFetched: qbTransactions.length,
       transactionsStored: newTransactions.length,
       transactionsSkipped: qbTransactions.length - newTransactions.length,
-      message: `Successfully synced ${newTransactions.length} new transactions`,
+      categorized,
+      categorizationErrors,
+      message: `Successfully synced ${newTransactions.length} new transactions${categorized > 0 ? ` and categorized ${categorized} with AI` : ''}`,
     })
   } catch (error: any) {
     console.error('Error syncing transactions:', error)
