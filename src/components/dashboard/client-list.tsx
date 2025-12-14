@@ -1,0 +1,119 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { RefreshCw, Plus, Users } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+
+interface Client {
+  id: string
+  name: string
+  lastSyncAt: Date | null
+  transactions: { id: string }[]
+}
+
+interface ClientListProps {
+  clients: Client[]
+}
+
+export function ClientList({ clients }: ClientListProps) {
+  const [syncing, setSyncing] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  const handleSync = async (clientId: string) => {
+    setSyncing(clientId)
+    try {
+      const response = await fetch('/api/transactions/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: 'Sync Complete!',
+          description: data.message,
+        })
+        // Refresh the page to show new transactions
+        window.location.reload()
+      } else {
+        toast({
+          title: 'Sync Failed',
+          description: data.error || 'Failed to sync transactions',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncing(null)
+    }
+  }
+
+  if (clients.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No clients connected yet</h3>
+        <p className="text-gray-600 mb-6">
+          Connect your first QuickBooks client to start AI-powered categorization
+        </p>
+        <Link href="/dashboard/clients/connect">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Connect QuickBooks
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {clients.map((client) => (
+        <div
+          key={client.id}
+          className="flex items-center justify-between p-4 border rounded-lg hover:border-blue-300 transition-colors"
+        >
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg">{client.name}</h3>
+            <div className="flex items-center gap-4 mt-1">
+              <p className="text-sm text-gray-600">
+                {client.transactions.length} pending transactions
+              </p>
+              {client.lastSyncAt && (
+                <p className="text-xs text-gray-500">
+                  Last synced: {new Date(client.lastSyncAt).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSync(client.id)}
+              disabled={syncing === client.id}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${syncing === client.id ? 'animate-spin' : ''}`}
+              />
+              {syncing === client.id ? 'Syncing...' : 'Sync'}
+            </Button>
+            <Link href={`/dashboard/clients/${client.id}/review`}>
+              <Button size="sm">Review</Button>
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
