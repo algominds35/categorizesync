@@ -8,6 +8,7 @@ const openai = new OpenAI({
 
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY || 'dummy-key-for-build',
+  environment: process.env.PINECONE_ENVIRONMENT || 'gcp-starter',
 })
 
 export async function categorizeTransaction(transactionId: string) {
