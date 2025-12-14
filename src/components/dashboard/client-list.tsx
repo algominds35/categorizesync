@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Plus, Users, Sparkles } from 'lucide-react'
+import { RefreshCw, Plus, Users, Sparkles, Unplug } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface Client {
@@ -20,6 +20,7 @@ interface ClientListProps {
 export function ClientList({ clients }: ClientListProps) {
   const [syncing, setSyncing] = useState<string | null>(null)
   const [categorizing, setCategorizing] = useState<string | null>(null)
+  const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const { toast } = useToast()
 
   const handleSync = async (clientId: string) => {
@@ -94,6 +95,46 @@ export function ClientList({ clients }: ClientListProps) {
     }
   }
 
+  const handleDisconnect = async (clientId: string, clientName: string) => {
+    if (!confirm(`Are you sure you want to disconnect ${clientName}? This will remove all synced data.`)) {
+      return
+    }
+
+    setDisconnecting(clientId)
+    try {
+      const response = await fetch('/api/quickbooks/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: 'Disconnected Successfully',
+          description: `${clientName} has been disconnected`,
+        })
+        // Refresh the page
+        window.location.reload()
+      } else {
+        toast({
+          title: 'Disconnect Failed',
+          description: data.error || 'Failed to disconnect client',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      })
+    } finally {
+      setDisconnecting(null)
+    }
+  }
+
   if (clients.length === 0) {
     return (
       <div className="text-center py-12">
@@ -137,7 +178,7 @@ export function ClientList({ clients }: ClientListProps) {
               variant="outline"
               size="sm"
               onClick={() => handleSync(client.id)}
-              disabled={syncing === client.id || categorizing === client.id}
+              disabled={syncing === client.id || categorizing === client.id || disconnecting === client.id}
             >
               <RefreshCw
                 className={`mr-2 h-4 w-4 ${syncing === client.id ? 'animate-spin' : ''}`}
@@ -148,7 +189,7 @@ export function ClientList({ clients }: ClientListProps) {
               variant="outline"
               size="sm"
               onClick={() => handleCategorize(client.id)}
-              disabled={syncing === client.id || categorizing === client.id || client.transactions.length === 0}
+              disabled={syncing === client.id || categorizing === client.id || disconnecting === client.id || client.transactions.length === 0}
               title={client.transactions.length === 0 ? 'No transactions to categorize' : 'Categorize transactions with AI'}
             >
               <Sparkles
@@ -157,10 +198,21 @@ export function ClientList({ clients }: ClientListProps) {
               {categorizing === client.id ? 'AI Thinking...' : 'AI Categorize'}
             </Button>
             <Link href={`/dashboard/clients/${client.id}/review`}>
-              <Button size="sm" disabled={client.transactions.length === 0}>
+              <Button size="sm" disabled={client.transactions.length === 0 || disconnecting === client.id}>
                 Review
               </Button>
             </Link>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDisconnect(client.id, client.name)}
+              disabled={syncing === client.id || categorizing === client.id || disconnecting === client.id}
+            >
+              <Unplug
+                className={`mr-2 h-4 w-4 ${disconnecting === client.id ? 'animate-pulse' : ''}`}
+              />
+              {disconnecting === client.id ? 'Disconnecting...' : 'Disconnect'}
+            </Button>
           </div>
         </div>
       ))}
