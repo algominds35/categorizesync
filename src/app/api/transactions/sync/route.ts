@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import {
-  createQBServiceForClient,
-  QBTransaction,
-} from '@/lib/services/quickbooks-service'
+import { createQBServiceForClient } from '@/lib/services/quickbooks-service'
+import { QBTransaction } from '@/types/quickbooks'
 import { categorizeTransaction } from '@/lib/services/ai-categorization-service'
 
 export async function POST(request: NextRequest) {
