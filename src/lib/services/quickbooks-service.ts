@@ -85,7 +85,7 @@ export class QuickBooksService {
     const transactions: QBTransaction[] = []
 
     try {
-      // Fetch Purchases
+      // Fetch Purchases (checks, credit card charges, cash purchases)
       const purchaseQuery = 'SELECT * FROM Purchase MAXRESULTS 100'
       const purchaseData = await this.makeApiRequest(purchaseQuery)
       const purchases = purchaseData?.QueryResponse?.Purchase || []
@@ -93,13 +93,21 @@ export class QuickBooksService {
 
       console.log(`Fetched ${purchases.length} purchases`)
 
-      // Fetch Expenses  
-      const expenseQuery = 'SELECT * FROM Expense MAXRESULTS 100'
-      const expenseData = await this.makeApiRequest(expenseQuery)
-      const expenses = expenseData?.QueryResponse?.Expense || []
-      transactions.push(...(Array.isArray(expenses) ? expenses : [expenses].filter(Boolean)))
+      // Fetch Bills  
+      const billQuery = 'SELECT * FROM Bill MAXRESULTS 100'
+      const billData = await this.makeApiRequest(billQuery)
+      const bills = billData?.QueryResponse?.Bill || []
+      transactions.push(...(Array.isArray(bills) ? bills : [bills].filter(Boolean)))
 
-      console.log(`Fetched ${expenses.length} expenses`)
+      console.log(`Fetched ${bills.length} bills`)
+
+      // Fetch Journal Entries
+      const journalQuery = 'SELECT * FROM JournalEntry MAXRESULTS 100'
+      const journalData = await this.makeApiRequest(journalQuery)
+      const journals = journalData?.QueryResponse?.JournalEntry || []
+      transactions.push(...(Array.isArray(journals) ? journals : [journals].filter(Boolean)))
+
+      console.log(`Fetched ${journals.length} journal entries`)
 
       return transactions
     } catch (error) {
