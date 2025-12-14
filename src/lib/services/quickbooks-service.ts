@@ -163,13 +163,143 @@ export class QuickBooksService {
    * Update transaction category in QuickBooks
    */
   async updateTransactionCategory(
-    transactionId: string,
+    qbId: string,
+    qbType: string,
     accountId: string,
     classId?: string
   ): Promise<boolean> {
-    // TODO: Implement update logic
-    // This requires fetching the transaction, modifying it, and updating
-    return Promise.resolve(true)
+    try {
+      console.log(`Updating ${qbType} transaction ${qbId} with account ${accountId}`)
+
+      // Different transaction types require different update methods
+      if (qbType === 'Purchase') {
+        await this.updatePurchaseCategory(qbId, accountId, classId)
+      } else if (qbType === 'Bill') {
+        await this.updateBillCategory(qbId, accountId, classId)
+      } else if (qbType === 'JournalEntry') {
+        await this.updateJournalEntryCategory(qbId, accountId, classId)
+      } else {
+        throw new Error(`Unsupported transaction type: ${qbType}`)
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error updating transaction category:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update Purchase transaction category
+   */
+  private async updatePurchaseCategory(qbId: string, accountId: string, classId?: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Fetch the purchase first
+      this.qb.getPurchase(qbId, (err: any, purchase: any) => {
+        if (err) {
+          return reject(err)
+        }
+
+        // Update the account on the first line item
+        if (purchase.Line && purchase.Line.length > 0) {
+          const line = purchase.Line[0]
+          if (line.AccountBasedExpenseLineDetail) {
+            line.AccountBasedExpenseLineDetail.AccountRef = {
+              value: accountId,
+            }
+            if (classId) {
+              line.AccountBasedExpenseLineDetail.ClassRef = {
+                value: classId,
+              }
+            }
+          }
+        }
+
+        // Update the purchase
+        this.qb.updatePurchase(purchase, (updateErr: any, updatedPurchase: any) => {
+          if (updateErr) {
+            return reject(updateErr)
+          }
+          resolve()
+        })
+      })
+    })
+  }
+
+  /**
+   * Update Bill transaction category
+   */
+  private async updateBillCategory(qbId: string, accountId: string, classId?: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Fetch the bill first
+      this.qb.getBill(qbId, (err: any, bill: any) => {
+        if (err) {
+          return reject(err)
+        }
+
+        // Update the account on the first line item
+        if (bill.Line && bill.Line.length > 0) {
+          const line = bill.Line[0]
+          if (line.AccountBasedExpenseLineDetail) {
+            line.AccountBasedExpenseLineDetail.AccountRef = {
+              value: accountId,
+            }
+            if (classId) {
+              line.AccountBasedExpenseLineDetail.ClassRef = {
+                value: classId,
+              }
+            }
+          }
+        }
+
+        // Update the bill
+        this.qb.updateBill(bill, (updateErr: any, updatedBill: any) => {
+          if (updateErr) {
+            return reject(updateErr)
+          }
+          resolve()
+        })
+      })
+    })
+  }
+
+  /**
+   * Update Journal Entry category
+   */
+  private async updateJournalEntryCategory(qbId: string, accountId: string, classId?: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Fetch the journal entry first
+      this.qb.getJournalEntry(qbId, (err: any, journalEntry: any) => {
+        if (err) {
+          return reject(err)
+        }
+
+        // Update the account on the debit line
+        if (journalEntry.Line && journalEntry.Line.length > 0) {
+          const debitLine = journalEntry.Line.find((line: any) => 
+            line.JournalEntryLineDetail?.PostingType === 'Debit'
+          )
+          if (debitLine && debitLine.JournalEntryLineDetail) {
+            debitLine.JournalEntryLineDetail.AccountRef = {
+              value: accountId,
+            }
+            if (classId) {
+              debitLine.JournalEntryLineDetail.ClassRef = {
+                value: classId,
+              }
+            }
+          }
+        }
+
+        // Update the journal entry
+        this.qb.updateJournalEntry(journalEntry, (updateErr: any, updatedJE: any) => {
+          if (updateErr) {
+            return reject(updateErr)
+          }
+          resolve()
+        })
+      })
+    })
   }
 
   /**

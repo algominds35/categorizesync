@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
+import { createLearningExample } from '@/lib/services/ai-categorization-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,23 +56,32 @@ export async function POST(request: NextRequest) {
     }
 
     if (approved) {
-      // Approve transaction
-      await db.transaction.update({
+      // Approve transaction - store the AI categorization as the final categorization
+      const updatedTransaction = await db.transaction.update({
         where: { id: transactionId },
         data: {
           status: 'APPROVED',
-          ...(accountId && { aiAccountId: accountId }),
-          ...(classId && { aiClassId: classId }),
+          reviewedAt: new Date(),
+          finalAccountId: transaction.aiAccountId,
+          finalAccountName: transaction.aiAccountName,
+          finalClassId: transaction.aiClassId || null,
+          finalClassName: transaction.aiClassName || null,
         },
       })
 
-      // TODO: Store learning data in Pinecone for future categorizations
-      // This would be a call to the Pinecone service to store the approved categorization
-      // as a training example for future transactions
+      // Store learning example in Pinecone for future AI improvements
+      try {
+        await createLearningExample(transactionId)
+        console.log(`✓ Learning example created for transaction ${transactionId}`)
+      } catch (error) {
+        console.error('Error creating learning example:', error)
+        // Non-critical - continue even if Pinecone fails
+      }
 
       return NextResponse.json({
         success: true,
-        message: 'Transaction approved',
+        message: 'Transaction approved and learning example stored',
+        transaction: updatedTransaction,
       })
     } else {
       // Reject transaction (reset to pending)

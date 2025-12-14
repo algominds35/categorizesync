@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Plus, Users, Sparkles, Unplug } from 'lucide-react'
+import { RefreshCw, Plus, Users, Sparkles, Unplug, Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface Client {
@@ -20,6 +20,7 @@ interface ClientListProps {
 export function ClientList({ clients }: ClientListProps) {
   const [syncing, setSyncing] = useState<string | null>(null)
   const [categorizing, setCategorizing] = useState<string | null>(null)
+  const [syncingToQB, setSyncingToQB] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -92,6 +93,42 @@ export function ClientList({ clients }: ClientListProps) {
       })
     } finally {
       setCategorizing(null)
+    }
+  }
+
+  const handleSyncToQB = async (clientId: string) => {
+    setSyncingToQB(clientId)
+    try {
+      const response = await fetch('/api/transactions/sync-to-qb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: 'Sync Complete!',
+          description: data.message || `Synced ${data.synced} approved transactions to QuickBooks`,
+        })
+        // Refresh the page
+        window.location.reload()
+      } else {
+        toast({
+          title: 'Sync Failed',
+          description: data.error || 'Failed to sync transactions',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncingToQB(null)
     }
   }
 
@@ -203,10 +240,22 @@ export function ClientList({ clients }: ClientListProps) {
               </Button>
             </Link>
             <Button
+              variant="default"
+              size="sm"
+              onClick={() => handleSyncToQB(client.id)}
+              disabled={syncing === client.id || categorizing === client.id || syncingToQB === client.id || disconnecting === client.id}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Upload
+                className={`mr-2 h-4 w-4 ${syncingToQB === client.id ? 'animate-bounce' : ''}`}
+              />
+              {syncingToQB === client.id ? 'Syncing...' : 'Sync to QB'}
+            </Button>
+            <Button
               variant="destructive"
               size="sm"
               onClick={() => handleDisconnect(client.id, client.name)}
-              disabled={syncing === client.id || categorizing === client.id || disconnecting === client.id}
+              disabled={syncing === client.id || categorizing === client.id || syncingToQB === client.id || disconnecting === client.id}
             >
               <Unplug
                 className={`mr-2 h-4 w-4 ${disconnecting === client.id ? 'animate-pulse' : ''}`}
