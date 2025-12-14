@@ -2,9 +2,9 @@ import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { TransactionReviewList } from '@/components/transactions/transaction-review-list'
 
 interface ReviewPageProps {
   params: {
@@ -74,90 +74,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             <CardTitle>All Transactions ({transactions.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No transactions found. Click &quot;Sync&quot; to fetch transactions from QuickBooks.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor/Customer</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">AI Category</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {transactions.map((txn) => (
-                      <tr key={txn.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {new Date(txn.date).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
-                          {txn.qbType}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {txn.vendor || txn.customer || '-'}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate">
-                          {txn.description || txn.memo || '-'}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-900 text-right font-medium">
-                          ${txn.amount.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
-                          {txn.aiAccountName ? (
-                            <div>
-                              <div className="font-medium">{txn.aiAccountName}</div>
-                              {txn.aiClassName && (
-                                <div className="text-xs text-gray-500">{txn.aiClassName}</div>
-                              )}
-                              {txn.aiConfidenceScore && (
-                                <div className="text-xs text-gray-500">
-                                  {Math.round(txn.aiConfidenceScore * 100)}% confidence
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">Not categorized</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-sm">
-                          <StatusBadge status={txn.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <TransactionReviewList transactions={transactions} />
           </CardContent>
         </Card>
       </div>
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const variants: Record<string, { label: string; className: string }> = {
-    PENDING: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
-    APPROVED: { label: 'Approved', className: 'bg-green-100 text-green-800' },
-    EDITED: { label: 'Edited', className: 'bg-blue-100 text-blue-800' },
-    SYNCED: { label: 'Synced', className: 'bg-purple-100 text-purple-800' },
-    ERROR: { label: 'Error', className: 'bg-red-100 text-red-800' },
-  }
-
-  const variant = variants[status] || { label: status, className: 'bg-gray-100 text-gray-800' }
-
-  return (
-    <Badge className={variant.className}>
-      {variant.label}
-    </Badge>
   )
 }
 
