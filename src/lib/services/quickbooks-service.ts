@@ -38,39 +38,18 @@ export class QuickBooksService {
     startDate?: Date,
     endDate?: Date
   ): Promise<QBTransaction[]> {
-    const transactions: QBTransaction[] = []
-
-    // Default to last 90 days if no date range provided
-    const start = startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-    const end = endDate || new Date()
-
-    const startDateStr = start.toISOString().split('T')[0]
-    const endDateStr = end.toISOString().split('T')[0]
+    const transactions: QBTransaction[]= []
 
     try {
       // Fetch Purchases
-      const purchases = await this.queryTransactions(
-        'Purchase',
-        startDateStr,
-        endDateStr
-      )
+      const purchases = await this.findPurchases()
       transactions.push(...purchases)
 
       // Fetch Expenses
-      const expenses = await this.queryTransactions(
-        'Expense',
-        startDateStr,
-        endDateStr
-      )
+      const expenses = await this.findExpenses()
       transactions.push(...expenses)
 
-      // Fetch Journal Entries
-      const journalEntries = await this.queryTransactions(
-        'JournalEntry',
-        startDateStr,
-        endDateStr
-      )
-      transactions.push(...journalEntries)
+      console.log(`Fetched ${purchases.length} purchases and ${expenses.length} expenses`)
 
       return transactions
     } catch (error) {
@@ -80,25 +59,35 @@ export class QuickBooksService {
   }
 
   /**
-   * Query transactions by type
+   * Find purchases
    */
-  private async queryTransactions(
-    type: string,
-    startDate: string,
-    endDate: string
-  ): Promise<QBTransaction[]> {
+  private async findPurchases(): Promise<QBTransaction[]> {
     return new Promise((resolve, reject) => {
-      const query = `SELECT * FROM ${type} WHERE TxnDate >= '${startDate}' AND TxnDate <= '${endDate}' MAXRESULTS 1000`
-
-      // Use the query method (not reportQuery)
-      this.qb.query(query, (err: any, data: any) => {
+      this.qb.findPurchases({}, (err: any, data: any) => {
         if (err) {
-          console.error(`Error querying ${type}:`, err)
-          return resolve([]) // Return empty array on error, don't fail entire sync
+          console.error('Error fetching purchases:', err)
+          return resolve([]) // Return empty array on error
         }
 
-        const entities = data?.QueryResponse?.[type] || []
-        resolve(Array.isArray(entities) ? entities : [entities].filter(Boolean))
+        const purchases = data?.QueryResponse?.Purchase || []
+        resolve(Array.isArray(purchases) ? purchases : purchases ? [purchases] : [])
+      })
+    })
+  }
+
+  /**
+   * Find expenses
+   */
+  private async findExpenses(): Promise<QBTransaction[]> {
+    return new Promise((resolve, reject) => {
+      this.qb.findExpenses({}, (err: any, data: any) => {
+        if (err) {
+          console.error('Error fetching expenses:', err)
+          return resolve([]) // Return empty array on error
+        }
+
+        const expenses = data?.QueryResponse?.Expense || []
+        resolve(Array.isArray(expenses) ? expenses : expenses ? [expenses] : [])
       })
     })
   }
