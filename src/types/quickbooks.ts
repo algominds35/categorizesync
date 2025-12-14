@@ -105,9 +105,7 @@ export interface QBClass {
 
 export interface QBQueryResponse<T> {
   QueryResponse: {
-    [key: string]: T | T[]
-    startPosition?: number
-    maxResults?: number
+    [key: string]: T | T[] | number | undefined
   }
 }
 
