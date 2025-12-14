@@ -6,10 +6,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 })
 
+// Pinecone v1.x auto-detects host from API key, environment not needed
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY || 'dummy-key-for-build',
-  environment: process.env.PINECONE_ENVIRONMENT || 'gcp-starter',
-})
+} as any)
 
 export async function categorizeTransaction(transactionId: string) {
   const transaction = await db.transaction.findUnique({
