@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const authUri = QuickBooks.authorizeUrl({
     client_id: QB_CLIENT_ID,
     redirect_uri: QB_REDIRECT_URI,
-    scope: [QuickBooks.scopes.Accounting, QuickBooks.scopes.OpenId],
+    scope: ['com.intuit.quickbooks.accounting', 'openid', 'profile', 'email'],
     state: userId, // Pass userId to identify the user after OAuth
   })
 
