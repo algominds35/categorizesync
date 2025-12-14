@@ -16,21 +16,19 @@ export class QuickBooksService {
     const clientSecret = process.env.QB_CLIENT_SECRET!
     const useSandbox = environment === 'sandbox'
 
+    // For OAuth 2.0, use simplified constructor
     this.qb = new QuickBooks(
       clientId,
-      clientId, // consumerKey (not used in OAuth 2.0, but required by library)
+      clientSecret,
       accessToken,
-      refreshToken,
+      false, // no token secret for OAuth 2.0
       realmId,
       useSandbox,
       false, // debug
-      '65', // minor version
+      65, // minor version (number, not string)
+      '2.0', // OAuth version
+      refreshToken
     )
-
-    // Set OAuth 2.0 tokens
-    this.qb.accessToken = accessToken
-    this.qb.refreshToken = refreshToken
-    this.qb.realmId = realmId
   }
 
   /**
