@@ -59,8 +59,7 @@ export async function GET(request: NextRequest) {
       false, // debug
       65, // minor version
       '2.0', // OAuth version
-      tokenData.refresh_token,
-      QB_REDIRECT_URI
+      tokenData.refresh_token
     )
 
     const companyInfo = await new Promise<any>((resolve, reject) => {
