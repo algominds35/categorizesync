@@ -61,7 +61,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Review Transactions</h1>
-              <p className="text-gray-600">{client.qbCompanyName}</p>
+              <p className="text-gray-600">{client.name}</p>
             </div>
           </div>
         </div>
