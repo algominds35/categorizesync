@@ -90,14 +90,15 @@ export class QuickBooksService {
     return new Promise((resolve, reject) => {
       const query = `SELECT * FROM ${type} WHERE TxnDate >= '${startDate}' AND TxnDate <= '${endDate}' MAXRESULTS 1000`
 
-      this.qb.reportQuery(query, (err: any, data: any) => {
+      // Use the query method (not reportQuery)
+      this.qb.query(query, (err: any, data: any) => {
         if (err) {
           console.error(`Error querying ${type}:`, err)
           return resolve([]) // Return empty array on error, don't fail entire sync
         }
 
         const entities = data?.QueryResponse?.[type] || []
-        resolve(Array.isArray(entities) ? entities : [entities])
+        resolve(Array.isArray(entities) ? entities : [entities].filter(Boolean))
       })
     })
   }
