@@ -62,12 +62,20 @@ export async function GET(request: NextRequest) {
       tokenData.refresh_token
     )
 
-    const companyInfo = await new Promise<any>((resolve, reject) => {
-      qbo.getCompanyInfo(realmId, (err: any, response: any) => {
-        if (err) reject(err)
-        else resolve(response)
+    // Try to get company info, but don't fail if it doesn't work
+    let companyName = `QuickBooks Company`
+    try {
+      const companyInfo = await new Promise<any>((resolve, reject) => {
+        qbo.getCompanyInfo(realmId, (err: any, response: any) => {
+          if (err) reject(err)
+          else resolve(response)
+        })
       })
-    })
+      companyName = companyInfo?.CompanyInfo?.CompanyName || companyName
+    } catch (companyInfoError) {
+      console.error('Failed to get company info (non-critical):', companyInfoError)
+      // Continue anyway - we'll get company name during first sync
+    }
 
     // Find user and create client
     const user = await db.user.findUnique({
@@ -99,7 +107,7 @@ export async function GET(request: NextRequest) {
       await db.client.create({
         data: {
           userId: user.id,
-          name: companyInfo.CompanyName || `QB Company ${realmId}`,
+          name: companyName,
           qbRealmId: realmId,
           qbAccessToken: tokenData.access_token,
           qbRefreshToken: tokenData.refresh_token,
