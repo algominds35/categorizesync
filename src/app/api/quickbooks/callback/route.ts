@@ -77,13 +77,20 @@ export async function GET(request: NextRequest) {
       // Continue anyway - we'll get company name during first sync
     }
 
-    // Find user and create client
-    const user = await db.user.findUnique({
+    // Find or create user
+    let user = await db.user.findUnique({
       where: { clerkId: state }
     })
 
     if (!user) {
-      throw new Error('User not found')
+      // User doesn't exist yet, create them
+      user = await db.user.create({
+        data: {
+          clerkId: state,
+          email: 'user@example.com', // Placeholder, will be updated by webhook
+          name: 'User',
+        },
+      })
     }
 
     // Check if client already exists
