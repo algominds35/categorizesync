@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw, TrendingUp, Users } from 'lucide-react'
 import Link from 'next/link'
 import { ClientList } from '@/components/dashboard/client-list'
-import { BetaBanner } from '@/components/beta-banner'
 
 export default async function DashboardPage() {
   const user = await currentUser()
@@ -60,7 +59,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BetaBanner />
       {/* Header */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
