@@ -45,7 +45,7 @@ export default async function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignUpButton mode="modal">
               <Button size="lg" className="text-lg px-8 py-6 bg-blue-600 hover:bg-blue-700">
-                Request Beta Access <ArrowRight className="ml-2 w-5 h-5" />
+                Start 14 Day Free Trial <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </SignUpButton>
           </div>
@@ -297,7 +297,7 @@ export default async function Home() {
           </p>
           <SignUpButton mode="modal">
             <Button size="lg" variant="secondary" className="text-lg px-10 py-6">
-              Request Beta Access <ArrowRight className="ml-2 w-5 h-5" />
+              Start 14 Day Free Trial <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </SignUpButton>
           <p className="text-blue-200 mt-6 text-sm">
