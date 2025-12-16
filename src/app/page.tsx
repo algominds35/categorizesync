@@ -60,13 +60,13 @@ export default async function Home() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-              You know exactly what we're talking about
+              You know exactly what we&apos;re talking about
             </h2>
             <div className="space-y-6">
               <div className="flex gap-4 items-start p-6 bg-red-50 rounded-lg border border-red-100">
                 <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 text-lg">The AI you don't trust</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2 text-lg">The AI you don&apos;t trust</h3>
                   <p className="text-gray-700">
                     QuickBooks auto-categorization gets it right... until it doesn&apos;t. A vendor it correctly categorized for six months suddenly goes to the wrong account. No warning. No explanation. You find out during month-end close.
                   </p>
@@ -279,7 +279,7 @@ export default async function Home() {
             </div>
             <div className="p-6 border-l-4 border-blue-600 bg-blue-50">
               <p className="text-gray-800">
-                <strong className="text-gray-900">Anyone billing hourly</strong> who can't afford to waste time on categorization cleanup
+                <strong className="text-gray-900">Anyone billing hourly</strong> who can&apos;t afford to waste time on categorization cleanup
               </p>
             </div>
           </div>
@@ -301,7 +301,7 @@ export default async function Home() {
             </Button>
           </SignUpButton>
           <p className="text-blue-200 mt-6 text-sm">
-            No credit card required • 14-day free trial when you're accepted
+            No credit card required • 14-day free trial when you&apos;re accepted
           </p>
         </div>
       </section>
