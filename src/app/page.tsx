@@ -37,7 +37,7 @@ export default async function Home() {
             For Bookkeepers & Accounting Firms
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Stop fixing QuickBooks AI mistakes at 11 PM
+            Stop fixing QuickBooks AI mistakes
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-10 leading-relaxed">
             A review layer between AI categorization and your books. Nothing posts without your approval. The AI learns from your decisions, not its mistakes.
