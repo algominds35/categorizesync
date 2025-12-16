@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         transactions: {
           where: {
             status: 'PENDING',
-            aiSuggestedAccountId: null
+            aiAccountId: null
           },
           take: 50 // Process in batches
         }
