@@ -21,76 +21,42 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange authorization code for tokens (OAuth 2.0)
-    const tokenEndpoint = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
-    
-    const authHeader = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString('base64')
-    
-    const tokenResponse = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${authHeader}`,
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: QB_REDIRECT_URI,
-      }).toString(),
-    })
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text()
-      console.error('Token exchange failed:', errorText)
-      throw new Error(`Token exchange failed: ${errorText}`)
-    }
-
-    const tokenData = await tokenResponse.json()
-
-    // Get company info using the new access token
+    // Exchange authorization code for tokens
     const qbo = new QuickBooks(
       QB_CLIENT_ID,
       QB_CLIENT_SECRET,
-      tokenData.access_token,
+      '',
       false,
       realmId,
       QB_ENVIRONMENT === 'sandbox',
-      false, // debug
-      65, // minor version
-      '2.0', // OAuth version
-      tokenData.refresh_token
+      true,
+      null,
+      '2.0',
+      QB_REDIRECT_URI
     )
 
-    // Try to get company info, but don't fail if it doesn't work
-    let companyName = `QuickBooks Company`
-    try {
-      const companyInfo = await new Promise<any>((resolve, reject) => {
-        qbo.getCompanyInfo(realmId, (err: any, response: any) => {
-          if (err) reject(err)
-          else resolve(response)
-        })
+    const tokenData = await new Promise<any>((resolve, reject) => {
+      qbo.exchangeAuthCode(code, (err: any, response: any) => {
+        if (err) reject(err)
+        else resolve(response)
       })
-      companyName = companyInfo?.CompanyInfo?.CompanyName || companyName
-    } catch (companyInfoError) {
-      console.error('Failed to get company info (non-critical):', companyInfoError)
-      // Continue anyway - we'll get company name during first sync
-    }
+    })
 
-    // Find or create user
-    let user = await db.user.findUnique({
+    // Get company info
+    const companyInfo = await new Promise<any>((resolve, reject) => {
+      qbo.getCompanyInfo(realmId, (err: any, response: any) => {
+        if (err) reject(err)
+        else resolve(response)
+      })
+    })
+
+    // Find user and create client
+    const user = await db.user.findUnique({
       where: { clerkId: state }
     })
 
     if (!user) {
-      // User doesn't exist yet, create them
-      user = await db.user.create({
-        data: {
-          clerkId: state,
-          email: 'user@example.com', // Placeholder, will be updated by webhook
-          name: 'User',
-        },
-      })
+      throw new Error('User not found')
     }
 
     // Check if client already exists
@@ -99,14 +65,13 @@ export async function GET(request: NextRequest) {
     })
 
     if (existingClient) {
-      // Update tokens AND environment
+      // Update tokens
       await db.client.update({
         where: { id: existingClient.id },
         data: {
           qbAccessToken: tokenData.access_token,
           qbRefreshToken: tokenData.refresh_token,
           qbTokenExpiry: new Date(Date.now() + tokenData.expires_in * 1000),
-          qbEnvironment: QB_ENVIRONMENT, // ✅ UPDATE ENVIRONMENT TOO!
           isActive: true,
         }
       })
@@ -115,7 +80,7 @@ export async function GET(request: NextRequest) {
       await db.client.create({
         data: {
           userId: user.id,
-          name: companyName,
+          name: companyInfo.CompanyName || `QB Company ${realmId}`,
           qbRealmId: realmId,
           qbAccessToken: tokenData.access_token,
           qbRefreshToken: tokenData.refresh_token,

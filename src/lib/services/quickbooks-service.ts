@@ -1,393 +1,208 @@
 import QuickBooks from 'node-quickbooks'
 import { db } from '@/lib/db'
-import { QBTransaction, QBAccount, QBClass } from '@/types/quickbooks'
 
-export class QuickBooksService {
-  private qb: any
-  private accessToken: string
-  private realmId: string
-  private baseUrl: string
+const QB_CLIENT_ID = process.env.QB_CLIENT_ID!
+const QB_CLIENT_SECRET = process.env.QB_CLIENT_SECRET!
+const QB_ENVIRONMENT = process.env.QB_ENVIRONMENT || 'sandbox'
 
-  constructor(
-    accessToken: string,
-    refreshToken: string,
-    realmId: string,
-    environment: string = 'production'
-  ) {
-    // Store for direct API calls
-    this.accessToken = accessToken
-    this.realmId = realmId
-    this.baseUrl = environment === 'sandbox' 
-      ? 'https://sandbox-quickbooks.api.intuit.com'
-      : 'https://quickbooks.api.intuit.com'
-
-    // Initialize QuickBooks client
-    const clientId = process.env.QB_CLIENT_ID!
-    const clientSecret = process.env.QB_CLIENT_SECRET!
-    const useSandbox = environment === 'sandbox'
-
-    // For OAuth 2.0, use simplified constructor
-    this.qb = new QuickBooks(
-      clientId,
-      clientSecret,
-      accessToken,
-      false, // no token secret for OAuth 2.0
-      realmId,
-      useSandbox,
-      false, // debug
-      65, // minor version (number, not string)
-      '2.0', // OAuth version
-      refreshToken
-    )
-  }
-
-  /**
-   * Make direct API request to QuickBooks
-   */
-  private async makeApiRequest(query: string): Promise<any> {
-    const url = `${this.baseUrl}/v3/company/${this.realmId}/query?query=${encodeURIComponent(query)}&minorversion=65`
-    
-    console.log('=== QuickBooks API Request ===')
-    console.log('URL:', url)
-    console.log('RealmId:', this.realmId)
-    console.log('Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...')
-    console.log('Base URL:', this.baseUrl)
-    console.log('Query:', query)
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-
-    console.log('Response status:', response.status)
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('QB API Error:', error)
-      console.error('Full response status:', response.status, response.statusText)
-      throw new Error(`QuickBooks API error: ${response.status}`)
-    }
-
-    return response.json()
-  }
-
-  /**
-   * Fetch uncategorized transactions (Purchases, Bills, Journal Entries)
-   */
-  async fetchUncategorizedTransactions(
-    startDate?: Date,
-    endDate?: Date
-  ): Promise<QBTransaction[]> {
-    const transactions: QBTransaction[] = []
-
-    try {
-      // Fetch Purchases (checks, credit card charges, cash purchases)
-      const purchaseQuery = 'SELECT * FROM Purchase MAXRESULTS 100'
-      const purchaseData = await this.makeApiRequest(purchaseQuery)
-      const purchases = purchaseData?.QueryResponse?.Purchase || []
-      const purchaseArray = Array.isArray(purchases) ? purchases : (purchases ? [purchases] : [])
-      transactions.push(...purchaseArray)
-
-      console.log(`Fetched ${purchaseArray.length} purchases`)
-
-      // Fetch Bills  
-      const billQuery = 'SELECT * FROM Bill MAXRESULTS 100'
-      const billData = await this.makeApiRequest(billQuery)
-      const bills = billData?.QueryResponse?.Bill || []
-      const billArray = Array.isArray(bills) ? bills : (bills ? [bills] : [])
-      transactions.push(...billArray)
-
-      console.log(`Fetched ${billArray.length} bills`)
-
-      // Fetch Journal Entries
-      const journalQuery = 'SELECT * FROM JournalEntry MAXRESULTS 100'
-      const journalData = await this.makeApiRequest(journalQuery)
-      const journals = journalData?.QueryResponse?.JournalEntry || []
-      const journalArray = Array.isArray(journals) ? journals : (journals ? [journals] : [])
-      transactions.push(...journalArray)
-
-      console.log(`Fetched ${journalArray.length} journal entries`)
-
-      return transactions
-    } catch (error) {
-      console.error('Error fetching QB transactions:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Fetch all accounts (for categorization)
-   */
-  async fetchAccounts(): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      this.qb.findAccounts(
-        { fetchAll: true },
-        (err: any, accounts: any) => {
-          if (err) {
-            console.error('Error fetching accounts:', err)
-            return reject(err)
-          }
-
-          const accountList = accounts?.QueryResponse?.Account || []
-          resolve(Array.isArray(accountList) ? accountList : [accountList])
-        }
-      )
-    })
-  }
-
-  /**
-   * Fetch all classes (for categorization)
-   */
-  async fetchClasses(): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      this.qb.findClasses(
-        { fetchAll: true },
-        (err: any, classes: any) => {
-          if (err) {
-            console.error('Error fetching classes:', err)
-            return resolve([]) // Classes are optional
-          }
-
-          const classList = classes?.QueryResponse?.Class || []
-          resolve(Array.isArray(classList) ? classList : [classList])
-        }
-      )
-    })
-  }
-
-  /**
-   * Update transaction category in QuickBooks
-   */
-  async updateTransactionCategory(
-    qbId: string,
-    qbType: string,
-    accountId: string,
-    classId?: string
-  ): Promise<boolean> {
-    try {
-      console.log(`Updating ${qbType} transaction ${qbId} with account ${accountId}`)
-
-      // Different transaction types require different update methods
-      if (qbType === 'Purchase') {
-        await this.updatePurchaseCategory(qbId, accountId, classId)
-      } else if (qbType === 'Bill') {
-        await this.updateBillCategory(qbId, accountId, classId)
-      } else if (qbType === 'JournalEntry') {
-        await this.updateJournalEntryCategory(qbId, accountId, classId)
-      } else {
-        throw new Error(`Unsupported transaction type: ${qbType}`)
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error updating transaction category:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Update Purchase transaction category
-   */
-  private async updatePurchaseCategory(qbId: string, accountId: string, classId?: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Fetch the purchase first
-      this.qb.getPurchase(qbId, (err: any, purchase: any) => {
-        if (err) {
-          return reject(err)
-        }
-
-        // Update the account on the first line item
-        if (purchase.Line && purchase.Line.length > 0) {
-          const line = purchase.Line[0]
-          if (line.AccountBasedExpenseLineDetail) {
-            line.AccountBasedExpenseLineDetail.AccountRef = {
-              value: accountId,
-            }
-            if (classId) {
-              line.AccountBasedExpenseLineDetail.ClassRef = {
-                value: classId,
-              }
-            }
-          }
-        }
-
-        // Update the purchase
-        this.qb.updatePurchase(purchase, (updateErr: any, updatedPurchase: any) => {
-          if (updateErr) {
-            return reject(updateErr)
-          }
-          resolve()
-        })
-      })
-    })
-  }
-
-  /**
-   * Update Bill transaction category
-   */
-  private async updateBillCategory(qbId: string, accountId: string, classId?: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Fetch the bill first
-      this.qb.getBill(qbId, (err: any, bill: any) => {
-        if (err) {
-          return reject(err)
-        }
-
-        // Update the account on the first line item
-        if (bill.Line && bill.Line.length > 0) {
-          const line = bill.Line[0]
-          if (line.AccountBasedExpenseLineDetail) {
-            line.AccountBasedExpenseLineDetail.AccountRef = {
-              value: accountId,
-            }
-            if (classId) {
-              line.AccountBasedExpenseLineDetail.ClassRef = {
-                value: classId,
-              }
-            }
-          }
-        }
-
-        // Update the bill
-        this.qb.updateBill(bill, (updateErr: any, updatedBill: any) => {
-          if (updateErr) {
-            return reject(updateErr)
-          }
-          resolve()
-        })
-      })
-    })
-  }
-
-  /**
-   * Update Journal Entry category
-   */
-  private async updateJournalEntryCategory(qbId: string, accountId: string, classId?: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Fetch the journal entry first
-      this.qb.getJournalEntry(qbId, (err: any, journalEntry: any) => {
-        if (err) {
-          return reject(err)
-        }
-
-        // Update the account on the debit line
-        if (journalEntry.Line && journalEntry.Line.length > 0) {
-          const debitLine = journalEntry.Line.find((line: any) => 
-            line.JournalEntryLineDetail?.PostingType === 'Debit'
-          )
-          if (debitLine && debitLine.JournalEntryLineDetail) {
-            debitLine.JournalEntryLineDetail.AccountRef = {
-              value: accountId,
-            }
-            if (classId) {
-              debitLine.JournalEntryLineDetail.ClassRef = {
-                value: classId,
-              }
-            }
-          }
-        }
-
-        // Update the journal entry
-        this.qb.updateJournalEntry(journalEntry, (updateErr: any, updatedJE: any) => {
-          if (updateErr) {
-            return reject(updateErr)
-          }
-          resolve()
-        })
-      })
-    })
-  }
-
-  /**
-   * Refresh access token if expired
-   */
-  async refreshAccessToken(): Promise<{
-    accessToken: string
-    refreshToken: string
-    expiresIn: number
-  }> {
-    return new Promise((resolve, reject) => {
-      this.qb.refreshAccessToken((err: any, data: any) => {
-        if (err) {
-          console.error('Error refreshing token:', err)
-          return reject(err)
-        }
-
-        resolve({
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresIn: data.expires_in,
-        })
-      })
-    })
-  }
-}
-
-/**
- * Initialize QB service for a specific client
- */
-export async function createQBServiceForClient(clientId: string) {
+export async function getQBClient(clientId: string) {
   const client = await db.client.findUnique({
-    where: { id: clientId },
+    where: { id: clientId }
   })
 
   if (!client) {
     throw new Error('Client not found')
   }
 
-  console.log('=== Creating QB Service ===')
-  console.log('Client ID:', clientId)
-  console.log('RealmId:', client.qbRealmId)
-  console.log('Environment:', client.qbEnvironment)
-  console.log('Token expiry:', client.qbTokenExpiry)
-  console.log('Token expired?:', new Date() >= new Date(client.qbTokenExpiry))
-
   // Check if token is expired
-  const now = new Date()
-  const tokenExpiry = new Date(client.qbTokenExpiry)
-
-  if (now >= tokenExpiry) {
-    console.log('Token expired, refreshing...')
-    // Token expired, refresh it
-    const qbService = new QuickBooksService(
-      client.qbAccessToken,
-      client.qbRefreshToken,
+  if (new Date() >= new Date(client.qbTokenExpiry)) {
+    // Refresh token
+    const qbo = new QuickBooks(
+      QB_CLIENT_ID,
+      QB_CLIENT_SECRET,
+      '',
+      false,
       client.qbRealmId,
-      client.qbEnvironment
+      client.qbEnvironment === 'sandbox',
+      true,
+      null,
+      '2.0'
     )
 
-    const newTokens = await qbService.refreshAccessToken()
+    const refreshed = await new Promise<any>((resolve, reject) => {
+      qbo.refreshAccessToken(client.qbRefreshToken, (err: any, response: any) => {
+        if (err) reject(err)
+        else resolve(response)
+      })
+    })
 
     // Update tokens in database
     await db.client.update({
       where: { id: clientId },
       data: {
-        qbAccessToken: newTokens.accessToken,
-        qbRefreshToken: newTokens.refreshToken,
-        qbTokenExpiry: new Date(Date.now() + newTokens.expiresIn * 1000),
-      },
+        qbAccessToken: refreshed.access_token,
+        qbRefreshToken: refreshed.refresh_token,
+        qbTokenExpiry: new Date(Date.now() + refreshed.expires_in * 1000),
+      }
     })
 
-    console.log('Token refreshed successfully')
-
-    return new QuickBooksService(
-      newTokens.accessToken,
-      newTokens.refreshToken,
+    return new QuickBooks(
+      QB_CLIENT_ID,
+      QB_CLIENT_SECRET,
+      refreshed.access_token,
+      false,
       client.qbRealmId,
-      client.qbEnvironment
+      client.qbEnvironment === 'sandbox',
+      true,
+      null,
+      '2.0'
     )
   }
 
-  console.log('Using existing token')
-
-  return new QuickBooksService(
+  return new QuickBooks(
+    QB_CLIENT_ID,
+    QB_CLIENT_SECRET,
     client.qbAccessToken,
-    client.qbRefreshToken,
+    false,
     client.qbRealmId,
-    client.qbEnvironment
+    client.qbEnvironment === 'sandbox',
+    true,
+    null,
+    '2.0'
   )
 }
+
+export async function syncTransactionsForClient(clientId: string) {
+  const qbo = await getQBClient(clientId)
+  const client = await db.client.findUnique({ where: { id: clientId } })
+
+  if (!client) {
+    throw new Error('Client not found')
+  }
+
+  // Fetch purchases from last 90 days
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - 90)
+  const query = `SELECT * FROM Purchase WHERE TxnDate >= '${startDate.toISOString().split('T')[0]}' MAXRESULTS 1000`
+
+  const purchases = await new Promise<any>((resolve, reject) => {
+    qbo.query(query, (err: any, response: any) => {
+      if (err) reject(err)
+      else resolve(response)
+    })
+  })
+
+  let imported = 0
+  let skipped = 0
+
+  for (const purchase of purchases.QueryResponse?.Purchase || []) {
+    // Check if transaction already exists
+    const existing = await db.transaction.findUnique({
+      where: { qbId: purchase.Id }
+    })
+
+    if (existing) {
+      skipped++
+      continue
+    }
+
+    // Create transaction
+    await db.transaction.create({
+      data: {
+        clientId: client.id,
+        qbId: purchase.Id,
+        qbType: 'Purchase',
+        date: new Date(purchase.TxnDate),
+        amount: purchase.TotalAmt || 0,
+        description: purchase.PrivateNote || '',
+        vendor: purchase.EntityRef?.name || null,
+        memo: purchase.PrivateNote || null,
+        originalAccountId: purchase.AccountRef?.value || null,
+        originalAccountName: purchase.AccountRef?.name || null,
+        status: 'PENDING',
+      }
+    })
+
+    imported++
+  }
+
+  // Update last sync time
+  await db.client.update({
+    where: { id: clientId },
+    data: { lastSyncAt: new Date() }
+  })
+
+  return { imported, skipped }
+}
+
+export async function syncCategorizationToQB(transactionId: string) {
+  const transaction = await db.transaction.findUnique({
+    where: { id: transactionId },
+    include: { client: true }
+  })
+
+  if (!transaction) {
+    throw new Error('Transaction not found')
+  }
+
+  if (!transaction.finalAccountId) {
+    throw new Error('Transaction has no final categorization')
+  }
+
+  const qbo = await getQBClient(transaction.clientId)
+
+  // Update the transaction in QuickBooks
+  // This is a simplified example - actual implementation depends on transaction type
+  try {
+    // For a Purchase transaction:
+    const qbTransaction = await new Promise<any>((resolve, reject) => {
+      qbo.getPurchase(transaction.qbId, (err: any, response: any) => {
+        if (err) reject(err)
+        else resolve(response)
+      })
+    })
+
+    // Update account reference
+    qbTransaction.AccountRef = {
+      value: transaction.finalAccountId,
+      name: transaction.finalAccountName,
+    }
+
+    if (transaction.finalClassId) {
+      qbTransaction.ClassRef = {
+        value: transaction.finalClassId,
+        name: transaction.finalClassName,
+      }
+    }
+
+    const updated = await new Promise<any>((resolve, reject) => {
+      qbo.updatePurchase(qbTransaction, (err: any, response: any) => {
+        if (err) reject(err)
+        else resolve(response)
+      })
+    })
+
+    // Mark as synced
+    await db.transaction.update({
+      where: { id: transactionId },
+      data: {
+        syncedToQb: true,
+        syncedAt: new Date(),
+        status: 'SYNCED',
+      }
+    })
+
+    return updated
+  } catch (error: any) {
+    // Log error
+    await db.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: 'ERROR',
+        syncError: error.message,
+      }
+    })
+    throw error
+  }
+}
+

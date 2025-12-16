@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
+import QuickBooks from 'node-quickbooks'
 
 const QB_CLIENT_ID = process.env.QB_CLIENT_ID!
 const QB_CLIENT_SECRET = process.env.QB_CLIENT_SECRET!
@@ -13,20 +14,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Build QuickBooks OAuth URL manually
-  const authorizationEndpoint = 'https://appcenter.intuit.com/connect/oauth2'
-  const scope = 'com.intuit.quickbooks.accounting openid profile email'
-  
-  const params = new URLSearchParams({
+  // Generate OAuth URL
+  const authUri = QuickBooks.authorizeUrl({
     client_id: QB_CLIENT_ID,
     redirect_uri: QB_REDIRECT_URI,
-    response_type: 'code',
-    scope: scope,
+    scope: [QuickBooks.scopes.Accounting, QuickBooks.scopes.OpenId],
     state: userId, // Pass userId to identify the user after OAuth
   })
 
-  const authUrl = `${authorizationEndpoint}?${params.toString()}`
-
-  return NextResponse.json({ authUrl })
+  return NextResponse.json({ authUrl: authUri })
 }
 

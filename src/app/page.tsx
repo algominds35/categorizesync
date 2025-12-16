@@ -2,7 +2,7 @@ import { SignInButton, SignUpButton } from '@clerk/nextjs'
 import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, Zap, Brain, TrendingUp } from 'lucide-react'
+import { Shield, Eye, RotateCcw, FileCheck, Lock, ClipboardCheck } from 'lucide-react'
 
 export default async function Home() {
   const user = await currentUser()
@@ -12,142 +12,251 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <div className="text-2xl font-bold text-blue-600">QB AI Categorizer</div>
-        <div className="flex gap-4">
-          <SignInButton mode="modal">
-            <Button variant="ghost">Sign In</Button>
-          </SignInButton>
-          <SignUpButton mode="modal">
-            <Button>Get Started</Button>
-          </SignUpButton>
+      <header className="border-b bg-white">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="text-xl font-semibold text-gray-900">ReconcileBook</div>
+          <div className="flex gap-4">
+            <SignInButton mode="modal">
+              <Button variant="ghost">Sign In</Button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <Button variant="outline">Request Beta Access</Button>
+            </SignUpButton>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-          Stop Manually Categorizing<br />
-          <span className="text-blue-600">QuickBooks Transactions</span>
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          AI-powered categorization that learns from you. Save 70% of your time and serve more clients.
-        </p>
-        <div className="flex gap-4 justify-center">
+      <section className="container mx-auto px-4 py-16 md:py-24">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+            QuickBooks AI keeps miscategorizing transactions. Rules break silently. You spend hours fixing mistakes.
+          </h1>
+          <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+            This is a review layer that sits between AI suggestions and your books. Nothing posts automatically. You approve every change. The AI learns only from what you approve.
+          </p>
           <SignUpButton mode="modal">
-            <Button size="lg" className="text-lg px-8">
-              Start Free Trial
+            <Button size="lg" className="text-base px-8">
+              Request Beta Access
             </Button>
           </SignUpButton>
-          <Button size="lg" variant="outline" className="text-lg px-8">
-            Watch Demo
-          </Button>
-        </div>
-        <p className="text-sm text-gray-500 mt-4">
-          14-day free trial • No credit card required
-        </p>
-      </section>
-
-      {/* Stats Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">90-95%</div>
-            <div className="text-gray-600">Accuracy Rate</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">70%</div>
-            <div className="text-gray-600">Time Saved</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">3-5hrs</div>
-            <div className="text-gray-600">Saved Per Client/Month</div>
-          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-6 h-6 text-blue-600" />
+      {/* Why This Exists */}
+      <section className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why this exists</h2>
+            <div className="prose prose-lg text-gray-700 space-y-4">
+              <p>
+                QuickBooks bank feed AI is unreliable. It miscategorizes vendors, randomly changes categories it got right before, and gives you no way to understand why it made a decision.
+              </p>
+              <p>
+                Rules help at first, but they do not scale. When you have 30 clients and hundreds of vendor patterns, rules become a maintenance nightmare. They silently break when QuickBooks updates formatting.
+              </p>
+              <p>
+                The real problem is not accuracy—it is trust. You cannot hand off categorization to something that might change your books without warning. Cleanup is expensive, stressful, and makes you look bad to clients.
+              </p>
+              <p className="font-semibold text-gray-900">
+                This tool does not try to replace you. It helps you work faster without losing control.
+              </p>
             </div>
-            <h3 className="font-semibold mb-2">1. Connect QuickBooks</h3>
-            <p className="text-sm text-gray-600">
-              Secure OAuth connection to your clients&apos; QuickBooks accounts
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Zap className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold mb-2">2. AI Categorizes</h3>
-            <p className="text-sm text-gray-600">
-              GPT-4 analyzes transactions and suggests categories with confidence scores
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Brain className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold mb-2">3. Review & Approve</h3>
-            <p className="text-sm text-gray-600">
-              Quick review dashboard with keyboard shortcuts (Space to approve!)
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold mb-2">4. Learns & Improves</h3>
-            <p className="text-sm text-gray-600">
-              AI learns from your corrections and gets smarter over time
-            </p>
           </div>
         </div>
       </section>
 
-      {/* Pricing Preview */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 border-2 border-blue-500">
-          <h3 className="text-2xl font-bold mb-4 text-center">Simple, Scalable Pricing</h3>
-          <div className="text-center mb-6">
-            <div className="text-5xl font-bold text-gray-900 mb-2">$49</div>
-            <div className="text-gray-600">base + $10 per client/month</div>
+      {/* How It Works */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-12">How it works</h2>
+            <div className="space-y-8">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-blue-900">1</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Connect your QuickBooks client</h3>
+                  <p className="text-gray-700">
+                    Standard OAuth connection. Read-only until you explicitly approve changes. No background syncing without your action.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-blue-900">2</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">AI analyzes and suggests</h3>
+                  <p className="text-gray-700">
+                    Transactions are categorized based on vendor, description, amount, and patterns from previously approved decisions. You see the suggestion and confidence level. Nothing is posted.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-blue-900">3</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">You review and approve</h3>
+                  <p className="text-gray-700">
+                    Every transaction requires your explicit approval. Change the category if it is wrong. Reject if you are unsure. Approve when it is correct. Keyboard shortcuts make this fast.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-blue-900">4</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Changes sync back to QuickBooks</h3>
+                  <p className="text-gray-700">
+                    Only after you approve, categories update in QuickBooks. You maintain a full audit trail of what changed and when.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-blue-900">5</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">AI learns from your decisions</h3>
+                  <p className="text-gray-700">
+                    Each approval trains the model for that specific client. Over time, suggestions improve based on your actual categorization patterns—not generic rules.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-              <span>Unlimited transactions</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-              <span>AI learning per client</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-              <span>Bulk approve actions</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-              <span>Auto-sync to QuickBooks</span>
-            </li>
-          </ul>
-          <SignUpButton mode="modal">
-            <Button className="w-full" size="lg">
-              Start Free Trial
-            </Button>
-          </SignUpButton>
+        </div>
+      </section>
+
+      {/* Trust Assurances */}
+      <section className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">What you control</h2>
+            <div className="space-y-6">
+              <div className="flex gap-4 items-start">
+                <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">No automatic posting</h3>
+                  <p className="text-gray-700">
+                    Nothing touches your books without explicit approval. Every transaction requires a manual review step.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <Eye className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Full audit trail</h3>
+                  <p className="text-gray-700">
+                    See exactly what changed, when it changed, and what the AI originally suggested versus what you approved.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <RotateCcw className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Reversible actions</h3>
+                  <p className="text-gray-700">
+                    Approved something by mistake? You can undo it. Changes sync back to QuickBooks only when you confirm.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <Lock className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Client data isolation</h3>
+                  <p className="text-gray-700">
+                    Each client has separate learning data. Patterns from one client never affect another. Your data never trains models for other users.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <FileCheck className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">You stay in control</h3>
+                  <p className="text-gray-700">
+                    This is a tool, not a replacement. You make the final call on every categorization. The AI is here to suggest, not decide.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Who This Is For */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Who this is for</h2>
+            <div className="space-y-4 text-gray-700">
+              <div className="flex gap-3 items-start">
+                <ClipboardCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                <p>
+                  <strong className="text-gray-900">Bookkeepers managing multiple clients</strong> who need consistency across dozens or hundreds of accounts
+                </p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <ClipboardCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                <p>
+                  <strong className="text-gray-900">Accounting firms</strong> where junior staff categorize but partners need oversight and quality control
+                </p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <ClipboardCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                <p>
+                  <strong className="text-gray-900">Power QuickBooks users</strong> who have already tried rules and auto-categorization and know why they fail at scale
+                </p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <ClipboardCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                <p>
+                  <strong className="text-gray-900">Small business owners</strong> with high transaction volume who cannot afford cleanup mistakes
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-blue-600 py-16">
+        <div className="container mx-auto px-4 text-center">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Currently in private beta
+            </h2>
+            <p className="text-xl text-blue-100 mb-8">
+              We are working with a small group of bookkeepers to refine the review workflow and learning system.
+            </p>
+            <SignUpButton mode="modal">
+              <Button size="lg" variant="secondary" className="text-base px-8">
+                Request Beta Access
+              </Button>
+            </SignUpButton>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 text-center text-gray-600 border-t">
-        <p>&copy; 2024 QB AI Categorizer. Built for bookkeepers who value their time.</p>
+      <footer className="border-t bg-white py-8">
+        <div className="container mx-auto px-4 text-center text-gray-600">
+          <p>ReconcileBook &copy; 2024. Built for bookkeepers who have cleaned up too many categorization mistakes.</p>
+        </div>
       </footer>
     </div>
   )

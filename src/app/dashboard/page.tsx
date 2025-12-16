@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw, TrendingUp, Users } from 'lucide-react'
 import Link from 'next/link'
-import { ClientList } from '@/components/dashboard/client-list'
 
 export default async function DashboardPage() {
   const user = await currentUser()
@@ -149,7 +148,40 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ClientList clients={dbUser.clients} />
+            {totalClients === 0 ? (
+              <div className="text-center py-12">
+                <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No clients connected yet</h3>
+                <p className="text-gray-600 mb-6">
+                  Connect your first QuickBooks client to start AI-powered categorization
+                </p>
+                <Link href="/dashboard/clients/connect">
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Connect QuickBooks
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {dbUser.clients.map((client) => (
+                  <div
+                    key={client.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div>
+                      <h3 className="font-semibold">{client.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        {client.transactions.length} pending transactions
+                      </p>
+                    </div>
+                    <Link href={`/dashboard/clients/${client.id}/review`}>
+                      <Button variant="outline">Review</Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

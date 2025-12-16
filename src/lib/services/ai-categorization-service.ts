@@ -6,10 +6,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 })
 
-// Pinecone v1.x auto-detects host from API key, environment not needed
 const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY || 'dummy-key-for-build',
-} as any)
+  apiKey: process.env.PINECONE_API_KEY!,
+})
 
 export async function categorizeTransaction(transactionId: string) {
   const transaction = await db.transaction.findUnique({
@@ -72,13 +71,6 @@ export async function categorizeTransaction(transactionId: string) {
 
   const result = JSON.parse(completion.choices[0].message.content || '{}')
 
-  // Calculate adjusted confidence score based on similarity to past examples
-  const adjustedConfidence = calculateAdjustedConfidence(
-    result.confidence || 0,
-    similarExamples.length,
-    similarExamples
-  )
-
   // Update transaction with AI categorization
   await db.transaction.update({
     where: { id: transactionId },
@@ -87,16 +79,13 @@ export async function categorizeTransaction(transactionId: string) {
       aiAccountName: result.accountName,
       aiClassId: result.classId || null,
       aiClassName: result.className || null,
-      aiConfidenceScore: adjustedConfidence,
+      aiConfidenceScore: result.confidence,
       aiReasoningNotes: result.reasoning,
       status: 'PENDING',
     }
   })
 
-  return {
-    ...result,
-    confidence: adjustedConfidence,
-  }
+  return result
 }
 
 function buildCategorizationPrompt(
@@ -156,31 +145,6 @@ Base your categorization on:
 
 Provide a confidence score between 0 and 1.
 `
-}
-
-/**
- * Calculate adjusted confidence score based on similar examples
- */
-function calculateAdjustedConfidence(
-  baseConfidence: number,
-  exampleCount: number,
-  examples: any[]
-): number {
-  // Start with base confidence from GPT-4
-  let confidence = baseConfidence
-
-  // Boost confidence if we have similar past examples
-  if (exampleCount > 0) {
-    // Check if examples agree with the AI's suggestion
-    const exampleAgreementBonus = 0.1 * Math.min(exampleCount, 3)
-    confidence = Math.min(confidence + exampleAgreementBonus, 1.0)
-  } else {
-    // Slightly reduce confidence if no past examples (less certainty)
-    confidence = Math.max(confidence - 0.05, 0)
-  }
-
-  // Round to 2 decimal places (0-1 scale)
-  return Math.round(confidence * 100) / 100
 }
 
 async function findSimilarLearningExamples(
