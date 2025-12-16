@@ -13,6 +13,13 @@ declare module 'node-quickbooks' {
       refreshToken?: string
     )
 
+    static authorizeUrl(params: any): string
+    static scopes: {
+      Accounting: string
+      OpenId: string
+      [key: string]: string
+    }
+
     refreshAccessToken(
       refreshToken: string,
       callback: (err: any, response: any) => void
