@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import { QuickBooksService } from '@/lib/services/quickbooks-service'
+import { syncCategorizationToQB } from '@/lib/services/quickbooks-service'
 
 export async function POST(request: Request) {
   try {
@@ -66,14 +66,6 @@ export async function POST(request: Request) {
       })
     }
 
-    // Initialize QuickBooks service
-    const qbService = new QuickBooksService(
-      client.qbRealmId,
-      client.qbAccessToken,
-      client.qbRefreshToken,
-      client.qbEnvironment as 'sandbox' | 'production'
-    )
-
     let syncedCount = 0
     const errors: string[] = []
 
@@ -85,19 +77,7 @@ export async function POST(request: Request) {
           continue
         }
 
-        await qbService.updateTransactionCategory(
-          transaction.qbId,
-          transaction.qbType,
-          transaction.finalAccountId,
-          transaction.finalAccountName
-        )
-
-        // Mark as synced
-        await db.transaction.update({
-          where: { id: transaction.id },
-          data: { syncedToQB: true }
-        })
-
+        await syncCategorizationToQB(transaction.id)
         syncedCount++
       } catch (error) {
         console.error(`[error] Failed to sync transaction ${transaction.id}:`, error)

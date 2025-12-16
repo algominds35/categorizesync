@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import { aiCategorizationService } from '@/lib/services/ai-categorization-service'
+import { categorizeTransaction } from '@/lib/services/ai-categorization-service'
 
 export async function POST(request: Request) {
   try {
@@ -72,24 +72,7 @@ export async function POST(request: Request) {
     // Categorize each transaction
     for (const transaction of client.transactions) {
       try {
-        const result = await aiCategorizationService.categorizeTransaction({
-          clientId: client.id,
-          vendor: transaction.vendor || '',
-          description: transaction.description,
-          amount: transaction.amount,
-          date: transaction.date
-        })
-
-        await db.transaction.update({
-          where: { id: transaction.id },
-          data: {
-            aiSuggestedAccountId: result.accountId,
-            aiSuggestedAccountName: result.accountName,
-            aiConfidenceScore: result.confidence,
-            aiReasoning: result.reasoning
-          }
-        })
-
+        await categorizeTransaction(transaction.id)
         categorizedCount++
       } catch (error) {
         console.error(`[error] Failed to categorize transaction ${transaction.id}:`, error)

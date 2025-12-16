@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import { aiCategorizationService } from '@/lib/services/ai-categorization-service'
+import { createLearningExample } from '@/lib/services/ai-categorization-service'
 
 export async function POST(request: Request) {
   try {
@@ -68,14 +68,7 @@ export async function POST(request: Request) {
 
     // Create learning example in Pinecone
     try {
-      await aiCategorizationService.createLearningExample({
-        clientId: transaction.clientId,
-        vendor: transaction.vendor || '',
-        description: transaction.description,
-        amount: transaction.amount,
-        accountId: accountId,
-        accountName: accountName
-      })
+      await createLearningExample(transactionId)
       console.log('[info] Learning example created for transaction:', transactionId)
     } catch (learningError) {
       console.error('[error] Failed to create learning example:', learningError)
