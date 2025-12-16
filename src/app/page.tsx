@@ -68,7 +68,7 @@ export default async function Home() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 text-lg">The AI you don't trust</h3>
                   <p className="text-gray-700">
-                    QuickBooks auto-categorization gets it right... until it doesn't. A vendor it correctly categorized for six months suddenly goes to the wrong account. No warning. No explanation. You find out during month-end close.
+                    QuickBooks auto-categorization gets it right... until it doesn&apos;t. A vendor it correctly categorized for six months suddenly goes to the wrong account. No warning. No explanation. You find out during month-end close.
                   </p>
                 </div>
               </div>
@@ -78,7 +78,7 @@ export default async function Home() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 text-lg">Rules that silently break</h3>
                   <p className="text-gray-700">
-                    You create bank rules to fix it. They work for weeks, then QuickBooks changes how a vendor name appears in the feed and your rule stops matching. You don't notice until you're reconciling.
+                    You create bank rules to fix it. They work for weeks, then QuickBooks changes how a vendor name appears in the feed and your rule stops matching. You don&apos;t notice until you&apos;re reconciling.
                   </p>
                 </div>
               </div>
@@ -88,7 +88,7 @@ export default async function Home() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 text-lg">Cleanup that destroys your margin</h3>
                   <p className="text-gray-700">
-                    You can't bill clients for fixing categorization mistakes. Twenty transactions miscategorized across three months means unpaid hours of cleanup work. Scale that across 30 clients and you're losing thousands in billable time.
+                    You can&apos;t bill clients for fixing categorization mistakes. Twenty transactions miscategorized across three months means unpaid hours of cleanup work. Scale that across 30 clients and you&apos;re losing thousands in billable time.
                   </p>
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default async function Home() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 text-lg">The fear of automation</h3>
                   <p className="text-gray-700">
-                    You want automation to save time, but you've been burned. So you manually review everything anyway, which defeats the purpose. You're stuck between slow manual work and risky automation.
+                    You want automation to save time, but you&apos;ve been burned. So you manually review everything anyway, which defeats the purpose. You&apos;re stuck between slow manual work and risky automation.
                   </p>
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default async function Home() {
             Stop cleaning up AI mistakes
           </h2>
           <p className="text-xl text-blue-100 mb-10 leading-relaxed">
-            We're in private beta with a small group of bookkeeping firms. Join the waitlist and we'll reach out when spots open.
+            We&apos;re in private beta with a small group of bookkeeping firms. Join the waitlist and we&apos;ll reach out when spots open.
           </p>
           <SignUpButton mode="modal">
             <Button size="lg" variant="secondary" className="text-lg px-10 py-6">
