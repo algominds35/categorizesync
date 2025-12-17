@@ -2,6 +2,7 @@ import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { TransactionReviewList } from '@/components/transactions/transaction-review-list'
+import { ClientActions } from '@/components/clients/client-actions'
 
 export default async function ReviewPage({
   params,
@@ -53,6 +54,8 @@ export default async function ReviewPage({
           {client.name} - {client.transactions.length} pending transaction(s)
         </p>
       </div>
+
+      <ClientActions clientId={params.clientId} />
 
       {client.transactions.length === 0 ? (
         <div className="text-center py-12">

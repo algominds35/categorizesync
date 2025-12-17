@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw, TrendingUp, Users } from 'lucide-react'
 import Link from 'next/link'
+import { ClientActions } from '@/components/clients/client-actions'
 
 export default async function DashboardPage() {
   const user = await currentUser()
@@ -175,9 +176,12 @@ export default async function DashboardPage() {
                         {client.transactions.length} pending transactions
                       </p>
                     </div>
-                    <Link href={`/dashboard/clients/${client.id}/review`}>
-                      <Button variant="outline">Review</Button>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <ClientActions clientId={client.id} showDisconnect={true} />
+                      <Link href={`/dashboard/clients/${client.id}/review`}>
+                        <Button variant="outline">Review</Button>
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
