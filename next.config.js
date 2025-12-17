@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    // Allow production builds to complete even with TypeScript errors
-    ignoreBuildErrors: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
   },
-  eslint: {
-    // Allow production builds to complete even with ESLint errors
-    ignoreDuringBuilds: true,
+  images: {
+    domains: ['img.clerk.com'],
   },
 }
 
 module.exports = nextConfig
+
