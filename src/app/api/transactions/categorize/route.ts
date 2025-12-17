@@ -56,39 +56,11 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Get available accounts and classes for this client
-    const accounts = await db.qBAccount.findMany({
-      where: { clientId },
-    })
-
-    const classes = await db.qBClass.findMany({
-      where: { clientId },
-    })
-
     // Categorize each transaction
     let categorizedCount = 0
     for (const transaction of transactions) {
       try {
-        const result = await categorizeTransaction(
-          clientId,
-          transaction.description,
-          transaction.vendor || '',
-          transaction.amount,
-          accounts,
-          classes
-        )
-
-        await db.transaction.update({
-          where: { id: transaction.id },
-          data: {
-            aiAccountId: result.accountId,
-            aiAccountName: result.accountName,
-            aiClassName: result.className,
-            aiConfidenceScore: result.confidence,
-            aiReasoning: result.reasoning,
-          },
-        })
-
+        await categorizeTransaction(transaction.id)
         categorizedCount++
       } catch (error) {
         console.error(`Failed to categorize transaction ${transaction.id}:`, error)
