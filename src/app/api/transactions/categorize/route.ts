@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get available accounts and classes for this client
-    const accounts = await db.account.findMany({
+    const accounts = await db.qBAccount.findMany({
       where: { clientId },
     })
 
-    const classes = await db.class.findMany({
+    const classes = await db.qBClass.findMany({
       where: { clientId },
     })
 
