@@ -37,13 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Create learning example for AI improvement (non-blocking)
     try {
-      await createLearningExample(
-        transaction.clientId,
-        transaction.description,
-        transaction.vendor || '',
-        accountId,
-        accountName
-      )
+      await createLearningExample(transactionId)
       console.log('✓ Learning example created for transaction', transactionId)
     } catch (learningError) {
       console.error('Failed to create learning example (non-critical):', learningError)
